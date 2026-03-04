@@ -1,4 +1,3 @@
-﻿const STORAGE_KEY = "mensajes.lite";
 const updateResult = document.getElementById("update-result");
 const copyList = document.getElementById("copy-list");
 const editList = document.getElementById("edit-list");
@@ -392,5 +391,6 @@ if (navigator.serviceWorker) {
 restoreTheme();
 setActiveView("copy");
 refreshMessages();
+
 
 

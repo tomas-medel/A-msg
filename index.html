@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mensajes ligeros</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="logo.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div>
+        <h1>Mensajes ligeros</h1>
+        <p class="lead">📋 Copia · ✏️ Edita · ➕ Agrega tus respuestas guardadas.</p>
+      </div>
+      <button class="settings-toggle" aria-label="Ajustes" title="Ajustes">
+        <span aria-hidden="true">⚙️</span>
+        <span class="sr-only">Ajustes</span>
+      </button>
+    </header>
+
+      <div class="view-switch" role="tablist" aria-label="Vistas de mensajes">
+        <button class="switch-btn is-active" data-target="copy" role="tab" aria-selected="true">
+          <span aria-hidden="true">📋</span>
+          <span class="sr-only">Copiar Mensajes</span>
+        </button>
+        <button class="switch-btn" data-target="edit" role="tab" aria-selected="false">
+          <span aria-hidden="true">✏️</span>
+          <span class="sr-only">Edición de Mensajes</span>
+        </button>
+      </div>
+
+    <section class="workspace">
+      <article class="panel copy-panel" data-view="copy" aria-label="Copiar mensajes">
+        <div class="panel-heading">
+          <h2>Copiar mensajes</h2>
+          <p class="panel-description">Toca el mensaje y después el ícono 📋 para pegar rápido.</p>
+        </div>
+        <div id="copy-list" class="copy-only-list" aria-live="polite"></div>
+      </article>
+
+      <article class="panel edit-panel hidden" data-view="edit" aria-label="Editar mensajes">
+        <div class="panel-heading">
+          <h2>Editar mensajes</h2>
+          <p class="panel-description">Pulsa ✏️ para cambiar o marca varios para borrar.</p>
+        </div>
+        <div class="edit-top">
+          <button type="button" id="show-form" class="icon-btn" aria-label="Agregar mensaje">
+            <span aria-hidden="true">➕</span>
+            <span class="sr-only">Agregar mensaje</span>
+          </button>
+          <div class="bulk-actions">
+            <span id="bulk-count">0 seleccionados</span>
+            <button type="button" id="bulk-delete" class="icon-action" disabled>
+              <span aria-hidden="true">🗑️</span>
+              <span class="sr-only">Eliminar seleccionados</span>
+            </button>
+          </div>
+        </div>
+
+        <form id="message-form" class="message-form hidden">
+          <div class="form-head">
+            <h3 id="form-title">Agregar mensaje</h3>
+            <button type="button" id="form-close" aria-label="Cerrar formulario">×</button>
+          </div>
+          <input id="new-message-title" type="text" placeholder="Título breve" maxlength="32" />
+          <textarea id="new-message-body" rows="4" placeholder="Escribe el mensaje aquí"></textarea>
+          <div class="form-actions">
+            <button type="submit" id="form-submit" class="pill-btn save-btn">Guardar</button>
+            <button type="button" id="form-delete" class="destructive hidden">Eliminar</button>
+          </div>
+        </form>
+
+        <p id="json-status" class="helper-text" aria-live="polite"></p>
+        <div id="edit-list" class="edit-list" aria-live="polite"></div>
+      </article>
+    </section>
+  </div>
+
+  <div class="settings-panel" aria-hidden="true">
+    <h3>Ajustes</h3>
+    <label class="theme-toggle">
+      <input type="checkbox" id="theme-toggle" />
+      <span class="theme-track" aria-hidden="true">
+        <span class="theme-handle" role="presentation">🌙</span>
+      </span>
+      <span class="theme-label">Modo oscuro / claro</span>
+    </label>
+    <button id="update-check" class="pill-btn" type="button">🔄 Buscar actualizaciones</button>
+    <button id="install-btn" class="pill-btn" type="button" disabled>⬇️ Descargar como app</button>
+    <p id="update-result" role="status"></p>
+  </div>
+
+  <div class="scrim" aria-hidden="true"></div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
+

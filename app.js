@@ -352,7 +352,7 @@ updateCheckBtn.addEventListener("click", async () => {
   updateResult.textContent = "Buscando...";
   try {
     const res = await fetch(
-      "https://api.github.com/repos/TomyDeAnteojos/A-msg/releases/latest"
+      "https://api.github.com/repos/tomas-medel/A-msg/releases/latest"
     );
     if (!res.ok) throw new Error("No hay info disponible");
     const data = await res.json();
@@ -391,6 +391,5 @@ if (navigator.serviceWorker) {
 restoreTheme();
 setActiveView("copy");
 refreshMessages();
-
 
 

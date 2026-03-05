@@ -27,9 +27,35 @@ const messagesState = {
   items: [],
 };
 
+const STORAGE_KEY = "mensajes";
+const APP_VERSION = "1.0.0";
+const RELEASE_CHECK_URL = "https://api.github.com/repos/tomas-medel/A-msg/releases/latest";
+
 let editingId = null;
 const selectedIds = new Set();
 let installPromptEvent = null;
+let isReloadPending = false;
+
+function reloadPage() {
+  if (isReloadPending) return;
+  isReloadPending = true;
+  window.location.reload();
+}
+
+function loadMessagesFromStorage() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error("Error parsing mensajes from storage", error);
+    return [];
+  }
+}
+
+function saveMessagesToStorage(messages) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+}
 
 function restoreTheme() {
   const savedTheme = localStorage.getItem("modo-mensajes");
@@ -78,19 +104,10 @@ async function copyWithFeedback(text, options = {}) {
 }
 
 async function refreshMessages() {
-  try {
-    const response = await fetch("/api/messages", {
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) throw new Error("No se pudo cargar");
-    selectedIds.clear();
-    messagesState.items = await response.json();
-    renderList();
-    setJsonStatus("");
-  } catch (error) {
-    console.error("No se pudo sincronizar con el servidor", error);
-    setJsonStatus("No se pudo obtener los mensajes.", true);
-  }
+  selectedIds.clear();
+  messagesState.items = loadMessagesFromStorage();
+  renderList();
+  setJsonStatus("");
 }
 
 function cleanupSelection() {
@@ -256,42 +273,50 @@ messageForm.addEventListener("submit", async (event) => {
     setJsonStatus("Agrega el texto del mensaje.", true);
     return;
   }
-  const payload = {
+
+  const messages = loadMessagesFromStorage();
+  if (editingId) {
+    const index = messages.findIndex((msg) => msg.id === editingId);
+    if (index === -1) {
+      setJsonStatus("Mensaje no encontrado.", true);
+      return;
+    }
+    messages[index] = {
+      ...messages[index],
+      title,
+      text: body,
+    };
+    saveMessagesToStorage(messages);
+    await refreshMessages();
+    closeForm();
+    setJsonStatus("Mensaje actualizado.");
+    return;
+  }
+
+  const next = {
+    id: Date.now().toString(),
     title,
     text: body,
   };
-  const endpoint = editingId ? `/api/messages/${editingId}` : "/api/messages";
-  const method = editingId ? "PUT" : "POST";
-  try {
-    const response = await fetch(endpoint, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error("No se pudo guardar");
-    await refreshMessages();
-    closeForm();
-    setJsonStatus(editingId ? "Mensaje actualizado." : "Mensaje guardado.");
-  } catch (error) {
-    console.error(error);
-    setJsonStatus("No se pudo guardar el mensaje.", true);
-  }
+  messages.unshift(next);
+  saveMessagesToStorage(messages);
+  await refreshMessages();
+  closeForm();
+  setJsonStatus("Mensaje guardado.");
 });
 
 formDelete.addEventListener("click", async () => {
   if (!editingId) return;
-  try {
-    const response = await fetch(`/api/messages/${editingId}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("No se pudo eliminar");
-    await refreshMessages();
-    closeForm();
-    setJsonStatus("Mensaje eliminado.");
-  } catch (error) {
-    console.error(error);
-    setJsonStatus("No se pudo eliminar el mensaje.", true);
+  const messages = loadMessagesFromStorage();
+  const filtered = messages.filter((msg) => msg.id !== editingId);
+  if (filtered.length === messages.length) {
+    setJsonStatus("Mensaje no encontrado.", true);
+    return;
   }
+  saveMessagesToStorage(filtered);
+  await refreshMessages();
+  closeForm();
+  setJsonStatus("Mensaje eliminado.");
 });
 
 formClose.addEventListener("click", closeForm);
@@ -299,20 +324,16 @@ showFormBtn.addEventListener("click", () => openForm());
 bulkDeleteBtn.addEventListener("click", async () => {
   if (!selectedIds.size) return;
   const ids = Array.from(selectedIds);
-  try {
-    const response = await fetch("/api/messages/bulk-delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
-    if (!response.ok) throw new Error("No se pudo eliminar");
-    await refreshMessages();
-    closeForm();
-    setJsonStatus("Mensajes eliminados.");
-  } catch (error) {
-    console.error(error);
-    setJsonStatus("No se pudo eliminar los mensajes.", true);
+  const messages = loadMessagesFromStorage();
+  const filtered = messages.filter((msg) => !ids.includes(msg.id));
+  if (filtered.length === messages.length) {
+    setJsonStatus("No hay mensajes seleccionados.", true);
+    return;
   }
+  saveMessagesToStorage(filtered);
+  await refreshMessages();
+  closeForm();
+  setJsonStatus("Mensajes eliminados.");
 });
 
 function setActiveView(target) {
@@ -348,19 +369,105 @@ themeToggle.addEventListener("change", () => {
   updateThemeToggle(themeToggle.checked);
 });
 
+function sanitizeVersion(tag) {
+  return typeof tag === "string" ? tag.replace(/^v/i, "").trim() : "";
+}
+
+function formatReleaseMessage(info) {
+  if (!info?.version) {
+    return `Versión ${APP_VERSION}`;
+  }
+  const publishedDate = info.publishedAt
+    ? new Date(info.publishedAt).toLocaleDateString()
+    : "fecha desconocida";
+  if (info.version === APP_VERSION) {
+    return `Ya estás en la versión ${APP_VERSION}.`;
+  }
+  return `Versión ${info.version} disponible · publicada el ${publishedDate}`;
+}
+
+function handleWaitingWorker(worker, latestVersion) {
+  if (!worker) return false;
+  const message = latestVersion
+    ? `Aplicando la versión ${latestVersion}...`
+    : "Aplicando una nueva versión...";
+  if (updateResult) {
+    updateResult.textContent = message;
+  }
+
+  const onStateChange = () => {
+    if (worker.state === "activated") {
+      worker.removeEventListener("statechange", onStateChange);
+      reloadPage();
+    }
+  };
+
+  worker.addEventListener("statechange", onStateChange);
+  worker.postMessage({ type: "SKIP_WAITING" });
+  return true;
+}
+
+async function ensureServiceWorkerUpdate(latestVersion) {
+  if (!("serviceWorker" in navigator)) return false;
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return false;
+
+  let applied = false;
+  const applyWorker = (worker) => {
+    if (!worker || applied) return false;
+    applied = handleWaitingWorker(worker, latestVersion);
+    return applied;
+  };
+
+  registration.addEventListener("updatefound", () => {
+    const installing = registration.installing;
+    if (!installing) return;
+    installing.addEventListener("statechange", () => {
+      if (installing.state === "installed" && registration.waiting) {
+        applyWorker(registration.waiting);
+      }
+    });
+  });
+
+  await registration.update();
+
+  if (registration.waiting) {
+    return applyWorker(registration.waiting);
+  }
+
+  return false;
+}
+
+async function fetchLatestReleaseInfo() {
+  const response = await fetch(RELEASE_CHECK_URL, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("No hay información disponible");
+  }
+  const data = await response.json();
+  return {
+    version: sanitizeVersion(data.tag_name),
+    publishedAt: data.published_at,
+  };
+}
+
 updateCheckBtn.addEventListener("click", async () => {
-  updateResult.textContent = "Buscando...";
+  updateResult.textContent = "Buscando actualizaciones...";
+  let releaseInfo = null;
   try {
-    const res = await fetch(
-      "https://api.github.com/repos/tomas-medel/A-msg/releases/latest"
-    );
-    if (!res.ok) throw new Error("No hay info disponible");
-    const data = await res.json();
-    updateResult.textContent = `Versión ${data.tag_name} · publicada el ${new Date(
-      data.published_at
-    ).toLocaleDateString()}`;
+    releaseInfo = await fetchLatestReleaseInfo();
+    updateResult.textContent = formatReleaseMessage(releaseInfo);
   } catch (error) {
-    updateResult.textContent = "Repositorio no disponible";
+    console.error("Actualizaciones:", error);
+    updateResult.textContent = "No se pudo consultar la versión más reciente.";
+  }
+
+  const updated = await ensureServiceWorkerUpdate(releaseInfo?.version);
+  if (updated) return;
+
+  if (releaseInfo?.version && releaseInfo.version !== APP_VERSION) {
+    updateResult.textContent += " Recarga la página para aplicarla.";
   }
 });
 
@@ -391,5 +498,3 @@ if (navigator.serviceWorker) {
 restoreTheme();
 setActiveView("copy");
 refreshMessages();
-
-

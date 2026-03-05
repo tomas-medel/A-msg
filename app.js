@@ -30,7 +30,7 @@ const messagesState = {
 
 const STORAGE_KEY = "mensajes";
 const APP_VERSION = "1.0.0";
-const RELEASE_CHECK_URL = "https://api.github.com/repos/tomas-medel/A-msg/releases/latest";
+const RELEASE_CHECK_URL = "https://api.github.com/repos/tomas-medel/A-msg";
 
 let editingId = null;
 const selectedIds = new Set();

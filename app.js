@@ -23,6 +23,7 @@ const themeHandle = themeTrack?.querySelector(".theme-handle");
 const viewButtons = document.querySelectorAll(".switch-btn");
 const panels = document.querySelectorAll("[data-view]");
 const jsonStatus = document.getElementById("json-status");
+const versionLabel = document.getElementById("current-version");
 
 const messagesState = {
   items: [],
@@ -41,6 +42,12 @@ function reloadPage() {
   if (isReloadPending) return;
   isReloadPending = true;
   window.location.reload();
+}
+
+function updateVersionLabel() {
+  if (versionLabel) {
+    versionLabel.textContent = `Versión ${APP_VERSION}`;
+  }
 }
 
 function loadMessagesFromStorage() {
@@ -502,6 +509,7 @@ if (navigator.serviceWorker) {
     .catch((err) => console.warn("El service worker no pudo registrar:", err));
 }
 
+updateVersionLabel();
 restoreTheme();
 setActiveView("copy");
 refreshMessages();

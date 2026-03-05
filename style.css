@@ -540,6 +540,14 @@ body.dark .edit-row {
   background: rgba(0, 0, 0, 0.12);
 }
 
+.version-label {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .scrim {
   position: fixed;
   inset: 0;

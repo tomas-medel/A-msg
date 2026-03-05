@@ -513,10 +513,31 @@ body.dark .edit-row {
   transform: translateY(-110%);
   transition: transform 0.25s ease;
   z-index: 12;
+  overflow: hidden;
 }
 
 .settings-panel.open {
   transform: translateY(0);
+}
+
+.settings-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.settings-close:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .scrim {

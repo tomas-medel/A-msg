@@ -14,6 +14,7 @@ const showFormBtn = document.getElementById("show-form");
 const themeToggle = document.getElementById("theme-toggle");
 const settingsToggle = document.querySelector(".settings-toggle");
 const settingsPanel = document.querySelector(".settings-panel");
+const settingsClose = document.getElementById("settings-close");
 const scrim = document.querySelector(".scrim");
 const installBtn = document.getElementById("install-btn");
 const updateCheckBtn = document.getElementById("update-check");
@@ -155,6 +156,11 @@ function closeForm() {
   messageForm.reset();
   editingId = null;
   formDelete.classList.add("hidden");
+}
+
+function closeSettings() {
+  settingsPanel.classList.remove("open");
+  scrim.classList.remove("visible");
 }
 
 function getSnippet(text, limit = 5) {
@@ -359,9 +365,10 @@ settingsToggle.addEventListener("click", () => {
 });
 
 scrim.addEventListener("click", () => {
-  settingsPanel.classList.remove("open");
-  scrim.classList.remove("visible");
+  closeSettings();
 });
+
+settingsClose?.addEventListener("click", closeSettings);
 
 themeToggle.addEventListener("change", () => {
   document.body.classList.toggle("dark", themeToggle.checked);
